@@ -30,8 +30,8 @@ module Devise
       extend ActiveSupport::Concern
 
       included do
-        before_create :generate_sms_token, :if => :sms_confirmation_required?
-        after_create  :resend_sms_token, :if => :sms_confirmation_required?
+        before_create :generate_sms_token, if: :sms_confirmation_required?
+        after_create  :send_on_create_sms_token, if: :send_sms_confirmation_notification?
       end
 
       # Confirm a user by setting it's sms_confirmed_at to actual time. If the user
@@ -86,6 +86,9 @@ module Devise
       end
 
       protected
+        def send_on_create_sms_token
+          send_sms_token
+        end
 
         # Callback to overwrite if an sms confirmation is required or not.
         def sms_confirmation_required?
@@ -136,6 +139,10 @@ module Devise
 
         def generate_sms_token!
           generate_sms_token && save(:validate => false)
+        end
+
+        def send_sms_confirmation_notification?
+          sms_confirmation_required? && phone.present?
         end
 
         module ClassMethods
