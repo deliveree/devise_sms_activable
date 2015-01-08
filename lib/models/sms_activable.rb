@@ -92,6 +92,10 @@ module Devise
       end
 
       protected
+        def send_sms_devise_notification(notification, *args)
+          Devise.sms_sender.send(notification, self, *args)
+        end
+
         def send_on_create_sms_token
           send_sms_token
         end
