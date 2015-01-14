@@ -32,6 +32,8 @@ module Devise
       included do
         before_create :generate_sms_token, if: :sms_confirmation_required?
         after_create  :send_on_create_sms_token, if: :send_sms_confirmation_notification?
+        before_update :generate_sms_token, if: :need_sms_reconfirmation?
+        after_update  :send_on_recreate_sms_token,  if: :need_sms_reconfirmation?
       end
 
       # Confirm a user by setting it's sms_confirmed_at to actual time. If the user
@@ -100,6 +102,10 @@ module Devise
           send_sms_token
         end
 
+        def send_on_recreate_sms_token
+          send_sms_token
+        end
+
         # Callback to overwrite if an sms confirmation is required or not.
         def sms_confirmation_required?
           !confirmed_sms?
@@ -152,6 +158,10 @@ module Devise
           generate_sms_token && save(:validate => false)
         end
 
+        def need_sms_reconfirmation?
+          self.class.reconfirmable && phone_changed? && phone.present?
+        end
+
         def send_sms_confirmation_notification?
           sms_confirmation_required? && phone.present?
         end
@@ -192,7 +202,7 @@ module Devise
             generate_small_token(:sms_confirmation_token)
           end
 
-          Devise::Models.config(self, :sms_confirm_within, :sms_confirmation_keys)
+          Devise::Models.config(self, :sms_confirm_within, :sms_confirmation_keys, :reconfirmable)
         end
     end
   end
